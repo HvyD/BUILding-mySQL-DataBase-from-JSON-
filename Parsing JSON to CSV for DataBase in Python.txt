@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+# coding: utf-8
+# Hvy_D made this
+
+# ## Read and transfer JSON file to Pandas DataFrame for Anaylsis and DB Schemas
+
+import os
+import csv
+import json
+from  jsonmerge import merge
+import pandas as pd
+import logging
+
+
+
+# logging and removing Malformed and Errors.
+logging.basicConfig(filename = 'malformed.log', format='%(asctime)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+logging.basicConfig(filename = 'error.log', format='%(asctime)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.ERROR)
+
+#load file
+TestJson1 = open('test_1', 'r')
+TestJson2 = open('test_2', 'r')
+
+#interate line by line and log and remove issues
+for i, line in enumerate(TestJson1, TestJson2):
+  try:
+    data = json.loads(line)
+  except json.decoder.JSONDecodeError:
+    logging.debug(repr(line))
+    logging.info('Malformation on Line')
+    logging.error(repr(line))
+    logging.info('Error')
+    data.remove(repr(line))
+    print('Malformation on Line', i+1,':\n', repr(line))  
+
+
+# #### Parse Cleaned JSON into CSV file for Visualizing Columns for DB Schema
+
+#load JSON into DataFrame and CSV
+json_file1 = 'test_1'
+json_file2 = 'test_2'
+data1 = pd.read_json(json_file1, convert_dates=True, lines=True)
+data2 = pd.read_json(json_file2, convert_dates=True, lines=True)
+data1.to_csv('Test1.csv', encoding='utf-8', index=False, na_rep=' ')
+data2.to_csv('Test2.csv', encoding='utf-8', index=False, na_rep=' ')
+
+data1.head();
+data2.head();
+
+#load log files into DataFrame and CSV
+Malformed = pd.read_table('malformed.log')
+Malformed.to_csv('malformed.csv')
+
+Errors = pd.read_table('error.log')
+Errors.to_csv('Test1.csv')
+
+Malformed.head()
+Erros.head()
+
+
+#find my columns to use
+cols1 = data1.columns.tolist()
+cols1;
+
+
+#find columns
+cols2 = data1.columns.tolist()
+cols2;
+
+
+# #### Read CSV file and split into DB Schema Tables to be manually Inserted into DB
+
+#merge CSV file
+Data = merge('Test1.csv','Test2.csv')
+CSV = pd.read_csv(Data)
+
+
+#seperate columns and values for PlayersInfo Table CSV file
+CSV[['userId', 'event_type', 'time', 'gold_earned', 'gold_spent', 'item_id',
+ 'item_sku']].to_csv('PlayersInfo.csv', index=False)
+pd.read_csv('PlayersInfo.csv')
+
+
+#seperate columns and values for Kills event Table CSV file
+CSV[['userId', 'killer', 'dmg_table']].to_csv('Kill_eventTBL.csv', index=False)
+pd.read_csv('Kill_eventTBL.csv')
+
